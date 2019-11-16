@@ -10,15 +10,15 @@
 /*
   Extracts data for SW1, SW2, SW3 and SW4 from PORTD.
 */
-int getsw( void ) { // (f)
-  int portd = PORTD;
-  return ((portd >> 8) & 0xf);
+int getsw(void)
+{
+  return ((PORTD >> 8) & 0xf);
 }
 
 /*
-  Extracts data for BTN2, BTN3 and BTN4 from PORTD.
+  Extracts data for BTN1, BTN2, BTN3 and BTN4 from PORTD.
 */
-int getbtns( void ) { // (g)
-  int portd = PORTD;
-  return ((portd >> 5) & 0x7);
+int getbtns(void)
+{
+  return ((((PORTD >> 5) & 0x7) << 1) | ((PORTF >> 1) & 0x1));
 }

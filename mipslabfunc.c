@@ -102,28 +102,28 @@ void display_init(void) {
 	DISPLAY_ACTIVATE_VDD;
 	quicksleep(1000000);
 
-	spi_send_recv(0xAE);
+	spi_send_recv(0xAE); // Display OFF
 	DISPLAY_ACTIVATE_RESET;
 	quicksleep(10);
 	DISPLAY_DO_NOT_RESET;
 	quicksleep(10);
 
-	spi_send_recv(0x8D);
-	spi_send_recv(0x14);
+	spi_send_recv(0x8D); // Charge PUMP setting
+	spi_send_recv(0x14); // Set higher column start address for page addressing mode
 
-	spi_send_recv(0xD9);
+	spi_send_recv(0xD9); // Set pre charge period
 	spi_send_recv(0xF1);
 
 	DISPLAY_ACTIVATE_VBAT;
 	quicksleep(10000000);
 
-	spi_send_recv(0xA1);
-	spi_send_recv(0xC8);
+	spi_send_recv(0xA1); // Set segment re-map
+	spi_send_recv(0xC8); // Set COM output scan direction
 
-	spi_send_recv(0xDA);
-	spi_send_recv(0x20);
+	spi_send_recv(0xDA); // Set COM pins hardware configurations
+	spi_send_recv(0x20); // Set memory addressing mode
 
-	spi_send_recv(0xAF);
+	spi_send_recv(0xAF); // Set display ON
 }
 
 void display_string(int line, char *s) {
@@ -141,46 +141,26 @@ void display_string(int line, char *s) {
 			textbuffer[line][i] = ' ';
 }
 
-/*
-	@param x: position on x-axis, integer between 0 and 100
-*/
-/*void draw_image(int x, const uint8_t *data, int xlen, int ylen) {
-	int i, j;
-
-	for(i = 0; i < 4; i++) { // length, y-axis
-		DISPLAY_CHANGE_TO_COMMAND_MODE;
-
-		spi_send_recv(0x22);
-		spi_send_recv(i);
-
-		spi_send_recv(x & 0xF);
-		spi_send_recv(0x10 | ((x >> 4) & 0xF));
-
-		DISPLAY_CHANGE_TO_DATA_MODE;
-
-		for(j = 0; j < xlen; j++) // length x-axis
-			spi_send_recv(~data[i*xlen + j]);
-	}
-}*/
-
-/*
-	@param x: position on x-axis, integer between 0 and 128
-*/
 void display_image(int x, const uint8_t *data) {
 	int i,j;
-	for(i = 0; i < 4; i++) { // length, y-axis
+
+	for(i = 0; i < 4; i++) { // iterates through the four pages
 		DISPLAY_CHANGE_TO_COMMAND_MODE;
+		spi_send_recv(0x22); // page addressing mode
+		spi_send_recv(i); //page start address
 
-		spi_send_recv(0x22);
-		spi_send_recv(i);
-
-		spi_send_recv(x & 0xF);
-		spi_send_recv(0x10 | ((x >> 4) & 0xF));
+		spi_send_recv(x & 0xF); // set lower column start address
+		spi_send_recv(0x10 | ((x >> 4) & 0xF)); // set higher column start address
 
 		DISPLAY_CHANGE_TO_DATA_MODE;
 
+<<<<<<< HEAD
 		for(j = 0; j < 128; j++) {// length x-axis
 			spi_send_recv(~data[j + i*128]);
+=======
+		for(j = 0; j < 128; j++) { //32 kolumner
+			spi_send_recv(data[i*128 + j]); // Använder bara de 8 första bitsen
+>>>>>>> f5b53f3569b84e347b1979285b8cd33386f187fd
 		}
 	}
 }
