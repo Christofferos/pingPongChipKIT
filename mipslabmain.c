@@ -55,6 +55,10 @@ int main(void) {
 	SPI2CONSET = 0x8000;
 
 	display_init();
+	display_string(0, "  PONG!");
+	display_string(1, "> Start");
+	display_string(2, "  Modes");
+	display_string(3, "  High Scores");
 	display_update();
 	labinit(); /* Do any lab-specific initialization */
 

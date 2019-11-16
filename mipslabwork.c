@@ -18,9 +18,17 @@
 
 uint8_t display[32][128];
 uint8_t oled_display[512];
-int screenWidth = 128;
-int screenHeight = 32;
+int inMenu = 1;
+int inGame = 0;
+int inModes = 0;
+int inHighScores = 0;
 int menuCursor = 0;
+int startOfGame = 1;
+int endOfGame = 0;
+
+// Modes
+int twoPlayers = 1;
+int ai = 0;
 
 int padelHeight = 10;
 int padelWidth = 4;
@@ -28,17 +36,17 @@ int padelSpeed = 1;
 int leds = 0xf;
 
 int xPosPadel1 = 0;
-int yPosPadel1 = 0;
+int yPosPadel1 = 32/2 - 5;
 int player1Score = 0;
 
-int xPosPadel2 = 120;
-int yPosPadel2 = 0;
+int xPosPadel2 = 124;
+int yPosPadel2 = 32/2 - 5;
 int player2Score = 0;
 
 int ballSize = 4;
 int ballSpeedX = 1;
 int ballSpeedY = 1;
-int xPosBall = 64;
+int xPosBall = 128/2- 2;
 int yPosBall = 16;
 
 int mytime = 0x5957;
@@ -158,17 +166,6 @@ void updateGame(void)
   {
     ballSpeedY *= -1;
   }
-  // Check for goals
-  if (xPosBall < 0)
-  {
-    leds = ((leds << 1) | 0x1);
-    player2Score++;
-  }
-  else if (xPosBall > (128 - ballSize))
-  {
-    leds >>= 1;
-    player1Score++;
-  }
 }
 
 void padelCollide(void)
@@ -181,10 +178,71 @@ void padelCollide(void)
   if ((ballSpeedX > 0) && ((xPosBall + ballSize) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && ((yPosBall < (yPosPadel2 + padelHeight)))) {
     ballSpeedX *= -1;
   }
-  if (xPosBall < 0 || xPosBall > (128 - ballSize))
+  if ((xPosBall + ballSize) < 0 || xPosBall > 128)
   {
-    ballSpeedX *= -1;
+    quicksleep(1 << 16);
+    goal();
   }
+}
+
+void goal() {
+  // Check for goals
+  if (xPosBall < 0)
+  {
+    leds = ((leds << 1) | 0x1);
+    player2Score++;
+  }
+  else if (xPosBall > (128 - ballSize))
+  {
+    leds >>= 1;
+    player1Score++;
+  }
+  resetGame();
+  endGame();
+}
+
+void resetGame() {
+  xPosPadel1 = 0;
+  yPosPadel1 = 32/2 - padelHeight/2;
+
+  xPosPadel2 = 128 - padelWidth;
+  yPosPadel2 = 32/2 - padelHeight/2;
+
+  xPosBall = 128/2 - ballSize/2;
+  yPosBall = 16;
+  ballSpeedX *= -1;
+
+  clearDisplay();
+  setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
+  setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
+  setPixelArray(xPosBall, yPosBall, ballSize, ballSize);
+  translateToImage();
+  display_image(0, oled_display);
+
+  startOfGame = 1;
+}
+
+void endGame(void) {
+  if (!leds) {
+    ballSpeedX = 0;
+    ballSpeedY = 0;
+    display_string(0, "");
+    display_string(1, "");
+    display_string(2, "");
+    display_string(3, "");
+    display_string(1, "Dark Side wins!");
+    display_update();
+  } else if (leds == 0xff) {
+    ballSpeedX = 0;
+    ballSpeedY = 0;
+    display_string(0, "");
+    display_string(1, "");
+    display_string(2, "");
+    display_string(3, "");
+    display_string(1, "Light Side wins!");
+    display_update();
+  }
+
 }
 
 void playerMovement(void)
@@ -208,56 +266,77 @@ void playerMovement(void)
 }
 /* ^Game logic - END */
 
-void menuSelection(void) {
-  if (getbtns() & 0x1 && menuCursor != 0) {
-    menuCursor++;
+void moveMenuCursor(void) {
+  display_string(0, "  PONG!");
+  if (menuCursor == 0) {
+    display_string(1, "> Start");
+    display_string(2, "  Modes");
+    display_string(3, "  High Scores");
+  } else if (menuCursor == 1) {
+    display_string(1, "  Start");
+    display_string(2, "> Modes");
+    display_string(3, "  High Scores");
+  } else {
+    display_string(1, "  Start");
+    display_string(2, "  Modes");
+    display_string(3, "> High Scores");
   }
-  else if (getbtns() & 0x2 && menuCursor != 2) {
-    menuCursor--;
-  }
-}
-
-void startmenu(void) {
-  /* S:et */
-  setPixelArray(32, 5, 2, 1);
-  setPixelArray(31, 6, 1, 1);
-  setPixelArray(32, 7, 2, 1);
-  setPixelArray(34, 8, 1, 1);
-  setPixelArray(32, 9, 2, 1);
-  /* T:et */
-  setPixelArray(35, 5, 3, 1);
-  setPixelArray(36, 6, 1, 4);
-  /* A:et */
-  setPixelArray(39, 5, 1, 1);
-  setPixelArray(38, 6, 1, 4);
-  setPixelArray(40, 6, 1, 4);
-  setPixelArray(39, 7, 1, 1);
-  /* R:et */
-
-  // P
-
-  // O
-
-  // N
-
-  // G
+  display_update();
 
   /* Variabler kan användas för att nå högre precition: screenWidth/3, screenHeight/3 */
+}
+
+void menu(void) {
+  quicksleep(1 << 20);
+  if(inMenu) {
+    if (getbtns() & 0x1 && menuCursor == 0) {
+        inMenu = 0;
+        inGame = 1;
+    }
+    else if (getbtns() & 0x1 && menuCursor == 1) {
+      inMenu = 0;
+      inModes = 1;
+    }
+    else if (getbtns() & 0x1 && menuCursor == 2) {
+      inMenu = 0;
+      inHighScores = 1;
+    }
+    else if ((getbtns() & 0x2) && menuCursor != 2) {
+      menuCursor++;
+      moveMenuCursor();
+    }
+    else if ((getbtns() & 0x4) && menuCursor != 0) {
+      menuCursor--;
+      moveMenuCursor();
+    }
+  }
 }
 
 /* This function is called repetitively from the main program */
 void labwork(void)
 {
   quicksleep(1 << 15);
-  setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
-  setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
-  setPixelArray(xPosBall, yPosBall, ballSize, ballSize);
-  translateToImage();
-  display_image(0, oled_display);
-  playerMovement();
-  padelCollide();
-  updateGame();
-  ledControl();
-
-  clearDisplay();
+  if (inGame) {
+    setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
+    if (twoPlayers) {
+      setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
+    }
+    setPixelArray(xPosBall, yPosBall, ballSize, ballSize);
+    translateToImage();
+    if (!endOfGame) {
+      display_image(0, oled_display);
+    }
+    playerMovement();
+    padelCollide();
+    updateGame();
+    ledControl();
+    if (startOfGame) {
+      quicksleep(1 << 23);
+      startOfGame = 0;
+    }
+    clearDisplay();
+  }
+  if (inMenu) {
+    menu();
+  }
 }

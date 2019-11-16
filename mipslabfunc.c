@@ -153,14 +153,8 @@ void display_image(int x, const uint8_t *data) {
 		spi_send_recv(0x10 | ((x >> 4) & 0xF)); // set higher column start address
 
 		DISPLAY_CHANGE_TO_DATA_MODE;
-
-<<<<<<< HEAD
-		for(j = 0; j < 128; j++) {// length x-axis
-			spi_send_recv(~data[j + i*128]);
-=======
 		for(j = 0; j < 128; j++) { //32 kolumner
 			spi_send_recv(data[i*128 + j]); // Använder bara de 8 första bitsen
->>>>>>> f5b53f3569b84e347b1979285b8cd33386f187fd
 		}
 	}
 }
