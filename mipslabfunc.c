@@ -179,8 +179,8 @@ void display_image(int x, const uint8_t *data) {
 
 		DISPLAY_CHANGE_TO_DATA_MODE;
 
-		for(j = 0; j < 32; j++) {// length x-axis
-			spi_send_recv(~0);
+		for(j = 0; j < 128; j++) {// length x-axis
+			spi_send_recv(~data[j + i*128]);
 		}
 	}
 }
