@@ -23,13 +23,21 @@ int inGame = 0;
 int inModes = 0;
 int inHighScores = 0;
 int menuCursor = 0;
-int startOfGame = 1;
-int endOfGame = 0;
+int modesCursor = 0;
 
 // Modes
-int twoPlayers = 1;
-int ai = 0;
+int defaultMode = 1;
+int aiMode = 0;
+int survivalMode = 0;
 
+int startOfMenu = 1;
+int startOfModes = 0;
+int startOfHighscores = 0;
+int startOfGame = 1;
+int endOfGame = 0;
+int highScoreList[3];
+
+// Padel and player variables
 int padelHeight = 10;
 int padelWidth = 4;
 int padelSpeed = 1;
@@ -43,6 +51,7 @@ int xPosPadel2 = 124;
 int yPosPadel2 = 32/2 - 5;
 int player2Score = 0;
 
+// Ball variables
 int ballSize = 4;
 int ballSpeedX = 1;
 int ballSpeedY = 1;
@@ -74,7 +83,7 @@ void labinit(void)
   TRISECLR = 0xff;  // Set as output (LED:S)
   TRISDSET = 0xfe0; // Set as input (BTN 2-4, SW 1-4)
   TRISFSET = 0x2; // Set as input (BTN 1)
-  PORTE = 0xf;        // LED:s
+  PORTE = 0x0;        // LED:s
 
   T2CONSET = 0x8070;         // Sets prescaler to 1:256
                              // Clock rate divider = prescaler = T2CON
@@ -178,8 +187,7 @@ void padelCollide(void)
   if ((ballSpeedX > 0) && ((xPosBall + ballSize) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && ((yPosBall < (yPosPadel2 + padelHeight)))) {
     ballSpeedX *= -1;
   }
-  if ((xPosBall + ballSize) < 0 || xPosBall > 128)
-  {
+  if ((xPosBall + ballSize) < 0 || xPosBall > 128) {
     quicksleep(1 << 16);
     goal();
   }
@@ -198,7 +206,9 @@ void goal() {
     player1Score++;
   }
   resetGame();
-  endGame();
+  if (leds == 0x0 || leds == 0xff) {
+    endGame();
+  }
 }
 
 void resetGame() {
@@ -224,25 +234,30 @@ void resetGame() {
 
 void endGame(void) {
   if (!leds) {
-    ballSpeedX = 0;
-    ballSpeedY = 0;
     display_string(0, "");
     display_string(1, "");
     display_string(2, "");
     display_string(3, "");
     display_string(1, "Dark Side wins!");
     display_update();
+
+    quicksleep(1 << 18);
+    inGame = 0;
+    inMenu = 1;
+    startOfMenu = 1;
   } else if (leds == 0xff) {
-    ballSpeedX = 0;
-    ballSpeedY = 0;
     display_string(0, "");
     display_string(1, "");
     display_string(2, "");
     display_string(3, "");
     display_string(1, "Light Side wins!");
     display_update();
-  }
 
+    quicksleep(1 << 18);
+    inGame = 0;
+    inMenu = 1;
+    startOfMenu = 1;
+  }
 }
 
 void playerMovement(void)
@@ -276,7 +291,7 @@ void moveMenuCursor(void) {
     display_string(1, "  Start");
     display_string(2, "> Modes");
     display_string(3, "  High Scores");
-  } else {
+  } else if (menuCursor == 2) {
     display_string(1, "  Start");
     display_string(2, "  Modes");
     display_string(3, "> High Scores");
@@ -288,29 +303,111 @@ void moveMenuCursor(void) {
 
 void menu(void) {
   quicksleep(1 << 20);
-  if(inMenu) {
-    if (getbtns() & 0x1 && menuCursor == 0) {
-        inMenu = 0;
-        inGame = 1;
-    }
-    else if (getbtns() & 0x1 && menuCursor == 1) {
+  if (getbtns() & 0x1 && menuCursor == 0) {
       inMenu = 0;
-      inModes = 1;
-    }
-    else if (getbtns() & 0x1 && menuCursor == 2) {
-      inMenu = 0;
-      inHighScores = 1;
-    }
-    else if ((getbtns() & 0x2) && menuCursor != 2) {
-      menuCursor++;
-      moveMenuCursor();
-    }
-    else if ((getbtns() & 0x4) && menuCursor != 0) {
-      menuCursor--;
-      moveMenuCursor();
-    }
+      menuCursor = 0;
+      inGame = 1;
+      leds = 0xf;
+  }
+  else if (getbtns() & 0x1 && menuCursor == 1) {
+    inMenu = 0;
+    menuCursor = 0;
+    inModes = 1;
+    startOfModes = 1;
+  }
+  else if (getbtns() & 0x1 && menuCursor == 2) {
+    inMenu = 0;
+    menuCursor = 0;
+    inHighScores = 1;
+    startOfHighscores = 1;
+  }
+  else if ((getbtns() & 0x2) && menuCursor != 2) {
+    menuCursor++;
+    moveMenuCursor();
+  }
+  else if ((getbtns() & 0x4) && menuCursor != 0) {
+    menuCursor--;
+    moveMenuCursor();
   }
 }
+
+void highscores() {
+  quicksleep(1 << 20);
+  if (getbtns() & 0x1) {
+      inMenu = 1;
+      inHighScores = 0;
+      startOfMenu = 1;
+  }
+}
+
+void moveModesCursor() {
+  display_string(0, "  MODES");
+  if (modesCursor == 0) {
+    display_string(1, "> Default");
+    display_string(2, "  Human vs AI");
+    display_string(3, "  Survival");
+  } else if (modesCursor == 1) {
+    display_string(1, "  Default");
+    display_string(2, "> Human vs AI");
+    display_string(3, "  Survival");
+  } else if (modesCursor == 2) {
+    display_string(1, "  Default");
+    display_string(2, "  Human vs AI");
+    display_string(3, "> Survival");
+  }
+  display_update();
+}
+
+void modes() {
+  quicksleep(1 << 20);
+  if (getbtns() & 0x1 && modesCursor == 0) {
+      inMenu = 1;
+      inModes = 0;
+      modesCursor = 0;
+      defaultMode = 1;
+      aiMode = 0;
+      survivalMode = 0;
+      startOfMenu = 1;
+  }
+  else if (getbtns() & 0x1 && modesCursor == 1) {
+    inMenu = 1;
+    inModes = 0;
+    modesCursor = 0;
+    defaultMode = 0;
+    aiMode = 1;
+    survivalMode = 0;
+    startOfMenu = 1;
+  }
+  else if (getbtns() & 0x1 && modesCursor == 2) {
+    inMenu = 1;
+    inModes = 0;
+    modesCursor = 0;
+    defaultMode = 0;
+    aiMode = 0;
+    survivalMode = 1;
+    startOfMenu = 1;
+  }
+  else if ((getbtns() & 0x2) && modesCursor != 2) {
+    modesCursor++;
+    moveModesCursor();
+  }
+  else if ((getbtns() & 0x4) && modesCursor != 0) {
+    modesCursor--;
+    moveModesCursor();
+  }
+}
+
+/*char * toArray(int number) //Copied function
+    {
+        int n = log10(number) + 1;
+        int i;
+      char *numberArray = calloc(n, sizeof(char));
+        for ( i = 0; i < n; ++i, number /= 10 )
+        {
+            numberArray[i] = number % 10;
+        }
+        return numberArray;
+    }*/
 
 /* This function is called repetitively from the main program */
 void labwork(void)
@@ -318,7 +415,7 @@ void labwork(void)
   quicksleep(1 << 15);
   if (inGame) {
     setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
-    if (twoPlayers) {
+    if (defaultMode) {
       setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
     }
     setPixelArray(xPosBall, yPosBall, ballSize, ballSize);
@@ -335,8 +432,38 @@ void labwork(void)
       startOfGame = 0;
     }
     clearDisplay();
-  }
-  if (inMenu) {
+  } else if (inMenu) {
     menu();
+    if (startOfMenu) {
+      PORTE = 0x0;
+      display_string(0, "  PONG!");
+    	display_string(1, "> Start");
+    	display_string(2, "  Modes");
+    	display_string(3, "  High Scores");
+    	display_update();
+      startOfMenu = 0;
+    }
+
+  } else if (inModes) {
+    modes();
+    if (startOfModes) {
+      display_string(0, "  MODES");
+    	display_string(1, "> Default");
+    	display_string(2, "  Human vs AI");
+    	display_string(3, "  Survival");
+    	display_update();
+      startOfModes = 0;
+    }
+  }
+  else if (inHighScores) {
+    highscores();
+    if (startOfHighscores) {
+    	display_string(0, " #1 " + highScoreList[0]); // Convert elements to string!
+    	display_string(1, " #2 " + highScoreList[1]);
+    	display_string(2, " #3 " + highScoreList[2]);
+      display_string(3, "> Back to menu");
+      display_update();
+      startOfHighscores = 0;
+    }
   }
 }
