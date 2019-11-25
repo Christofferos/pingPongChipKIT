@@ -38,23 +38,23 @@ int endOfGame = 0;
 int highScoreList[3];
 
 // Padel and player variables
-int padelHeight = 10;
+float padelHeight = 8;
 int padelWidth = 4;
 int padelSpeed = 1;
 int leds = 0xf;
 
 int xPosPadel1 = 0;
-int yPosPadel1 = 32/2 - 5;
+float yPosPadel1 = 32/2 - 5;
 int player1Score = 0;
 
-int xPosPadel2 = 124;
-int yPosPadel2 = 32/2 - 5;
+int xPosPadel2 = 127 - 4;
+float yPosPadel2 = 32/2 - 5;
 int player2Score = 0;
 
 // Ball variables
 int ballSize = 4;
-int ballSpeedX = 1;
-int ballSpeedY = 1;
+float ballSpeedX = 1;
+float ballSpeedY = 1;
 int xPosBall = 128/2- 2;
 int yPosBall = 16;
 
@@ -173,18 +173,27 @@ void updateGame(void)
   // Roof and floor ball bounce
   if (yPosBall < 0 || yPosBall > (31 - ballSize))
   {
-    ballSpeedY *= -1;
+    ballSpeedY *= -1.0;
   }
 }
 
 void padelCollide(void)
 {
-  // ballSpeedX > 0 kan tas bort från if-satsen när bollen inte längre kan studsa mot skärmens kortsidor
-  if ((ballSpeedX < 0) && (xPosBall == (xPosPadel1 + padelWidth)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
+  if ((xPosBall == (xPosPadel1 + padelWidth - 2)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
+    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/3 && ballSpeedY > -2) {
+      ballSpeedY -= 0.5;
+      //ballSpeedY *= -1;
+    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/3 && ballSpeedY < 2) {
+      ballSpeedY += 0.5;
+      //ballSpeedY *= -1;
+    }
     ballSpeedX *= -1;
-  }
-  // ballSpeedX > 0 kan tas bort från if-satsen när bollen inte längre kan studsa mot skärmens kortsidor
-  if ((ballSpeedX > 0) && ((xPosBall + ballSize) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && ((yPosBall < (yPosPadel2 + padelHeight)))) {
+  } else if (((xPosBall + ballSize + 2) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
+    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/3 && ballSpeedY > -2) {
+      ballSpeedY -= 1.0;
+    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/3 && ballSpeedY < 2) {
+      ballSpeedY += 1.0;
+    }
     ballSpeedX *= -1;
   }
   if ((xPosBall + ballSize) < 0 || xPosBall > 128) {
@@ -215,12 +224,18 @@ void resetGame() {
   xPosPadel1 = 0;
   yPosPadel1 = 32/2 - padelHeight/2;
 
-  xPosPadel2 = 128 - padelWidth;
+  xPosPadel2 = 127 - padelWidth;
   yPosPadel2 = 32/2 - padelHeight/2;
 
   xPosBall = 128/2 - ballSize/2;
   yPosBall = 16;
   ballSpeedX *= -1;
+  ballSpeedY = 1;
+  if (ballSpeedX > 0) {
+    ballSpeedX = 1;
+  } else {
+    ballSpeedX = -1;
+  }
 
   clearDisplay();
   setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
@@ -262,11 +277,11 @@ void endGame(void) {
 
 void playerMovement(void)
 {
-  if ((getbtns() & 0x1) && (yPosPadel2 < (31 - padelHeight)))
+  if (defaultMode && (getbtns() & 0x1) && (yPosPadel2 < (31 - padelHeight)))
   {
     yPosPadel2 += padelSpeed;
   }
-  else if ((getbtns() & 0x2) && (yPosPadel2 > 0))
+  else if (defaultMode && (getbtns() & 0x2) && (yPosPadel2 > 0))
   {
     yPosPadel2 -= padelSpeed;
   }
@@ -413,10 +428,33 @@ void modes() {
 void labwork(void)
 {
   quicksleep(1 << 15);
-  if (inGame) {
+  if (inGame ) {
     setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
+    setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
     if (defaultMode) {
-      setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
+      //
+    } else if (survivalMode) {
+      if (yPosBall < padelHeight / 2) {
+        yPosPadel2 = 0;
+      } else if ((yPosBall + ballSize) > (31 - padelHeight / 2)) {
+        yPosPadel2 = 31 - padelHeight;
+      } else {
+        yPosPadel2 = yPosBall + ballSize / 2 - padelHeight / 2;
+      }
+    } else if (aiMode) {
+       if (xPosBall > 127/2) {
+          if((yPosPadel2+padelHeight/2) < (yPosBall+ballSize/2) && yPosPadel2 < (31 - padelHeight)) {
+            yPosPadel2 += 0.5;
+          } else if((yPosPadel2+padelHeight/2) > (yPosBall+ballSize/2) && yPosPadel2 > 0) {
+            yPosPadel2 -= 0.5;
+          }
+      } else {
+        if ((yPosPadel2 + padelHeight / 2) < 14.9) {
+          yPosPadel2 += 0.1;
+        } else if ((yPosPadel2 + padelHeight / 2) > 15.1) {
+          yPosPadel2 -= 0.1;
+        }
+      }
     }
     setPixelArray(xPosBall, yPosBall, ballSize, ballSize);
     translateToImage();
