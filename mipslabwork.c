@@ -18,13 +18,14 @@
 
 float randomFloat;
 
-srand(20);   // Initialization, should only be called once.
+/*
+srand(2);   // Initialization, should only be called once.
 float randomFloat1 = rand();
 float randomFloat2 = rand();
 float randomFloat3 = rand();
 float randomFloat4 = rand(); 
 randomFloat1 -= 1;
-	
+	*/
 
 uint8_t display[32][128];
 uint8_t oled_display[512];
@@ -48,7 +49,7 @@ int endOfGame = 0;
 int highScoreList[3];
 
 // Padel and player variables
-float padelHeight = 8;
+float padelHeight = 6;
 float padelWidth = 4;
 float padelSpeed = 1;
 int leds = 0xf;
@@ -62,9 +63,9 @@ float yPosPadel2 = 32/2 - 5;
 int player2Score = 0;
 
 // Ball variables
-float ballSize = 4;
+float ballSize = 3;
 float ballSpeedX = 1;
-float ballSpeedY = randomFloat;
+float ballSpeedY = 0;
 float xPosBall = 128/2- 2;
 float yPosBall = 16;
 
@@ -263,23 +264,29 @@ void goal() {
 
 void padelCollide(void)
 {
-  if ((xPosBall == (xPosPadel1 + padelWidth - 2)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
-    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/2 && ballSpeedY > -1.5) {
-      ballSpeedY += 0.25;
-
-    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/2 && ballSpeedY < 1.5) {
-      ballSpeedY -= 0.25;
-    }
+  // PADEL 1 
+  if ( ballSpeedX < 0 && (xPosBall >= xPosPadel1) && (xPosBall <= (xPosPadel1 + padelWidth)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
     ballSpeedX *= -1;
-  } else if (((xPosBall + ballSize + 2) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
+    if(ballSpeedX < 3) {
+      ballSpeedX += 0.5;
+    }
+    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/2 && ballSpeedY > -1.5) {
+      ballSpeedY -= 0.25;
+    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/2 && ballSpeedY < 1.5) {
+      ballSpeedY += 0.25;
+    }
+  } 
+  // PADEL 2
+  else if ( ballSpeedX > 0 && ((xPosBall + ballSize) >= xPosPadel2) && ((xPosBall + ballSize) <= xPosPadel2 + padelWidth) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
+    ballSpeedX *= -1;
+    if(ballSpeedX > -3) {
+      ballSpeedX -= 0.5;
+    }
     if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/2 && ballSpeedY > -1.5) {
       ballSpeedY -= 0.25;
-
     } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
       ballSpeedY += 0.25;
-
     }
-    ballSpeedX *= -1;
   }
   if ((xPosBall + ballSize) < 0 || xPosBall > 128) {
     quicksleep(1 << 16);
@@ -456,14 +463,14 @@ void labwork(void)
     } else if (aiMode) {
        if (xPosBall > 127/2) {
           if((yPosPadel2+padelHeight/2) < (yPosBall+ballSize/2) && yPosPadel2 < (31 - padelHeight)) {
-            yPosPadel2 += 0.5;
+            yPosPadel2 += 0.75;
           } else if((yPosPadel2+padelHeight/2) > (yPosBall+ballSize/2) && yPosPadel2 > 0) {
-            yPosPadel2 -= 0.5;
+            yPosPadel2 -= 0.75;
           }
       } else {
-        if ((yPosPadel2 + padelHeight / 2) < 14.9) {
+        if ((yPosPadel2 + padelHeight / 2) < 14.8) {
           yPosPadel2 += 0.1;
-        } else if ((yPosPadel2 + padelHeight / 2) > 15.1) {
+        } else if ((yPosPadel2 + padelHeight / 2) > 15.2) {
           yPosPadel2 -= 0.1;
         }
       }
