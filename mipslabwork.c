@@ -39,26 +39,25 @@ int highScoreList[3];
 
 // Padel and player variables
 float padelHeight = 8;
-int padelWidth = 4;
-int padelSpeed = 1;
+float padelWidth = 4;
+float padelSpeed = 1;
 int leds = 0xf;
 
-int xPosPadel1 = 0;
+float xPosPadel1 = 0;
 float yPosPadel1 = 32/2 - 5;
 int player1Score = 0;
 
-int xPosPadel2 = 127 - 4;
+float xPosPadel2 = 127 - 4;
 float yPosPadel2 = 32/2 - 5;
 int player2Score = 0;
 
 // Ball variables
-int ballSize = 4;
+float ballSize = 4;
 float ballSpeedX = 1;
 float ballSpeedY = 1;
-int xPosBall = 128/2- 2;
-int yPosBall = 16;
+float xPosBall = 128/2- 2;
+float yPosBall = 16;
 
-int mytime = 0x5957;
 int timeoutcount = 0;
 int tickCounter = 0;
 
@@ -173,26 +172,27 @@ void updateGame(void)
   // Roof and floor ball bounce
   if (yPosBall < 0 || yPosBall > (31 - ballSize))
   {
-    ballSpeedY *= -1.0;
+    ballSpeedY *= -1;
   }
 }
 
 void padelCollide(void)
 {
   if ((xPosBall == (xPosPadel1 + padelWidth - 2)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
-    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/3 && ballSpeedY > -2) {
-      ballSpeedY -= 0.5;
-      //ballSpeedY *= -1;
-    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/3 && ballSpeedY < 2) {
-      ballSpeedY += 0.5;
-      //ballSpeedY *= -1;
+    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/2 && ballSpeedY > -1.5) {
+      ballSpeedY += 0.25;
+
+    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/2 && ballSpeedY < 1.5) {
+      ballSpeedY -= 0.25;
     }
     ballSpeedX *= -1;
   } else if (((xPosBall + ballSize + 2) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
-    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/3 && ballSpeedY > -2) {
-      ballSpeedY -= 1.0;
-    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/3 && ballSpeedY < 2) {
-      ballSpeedY += 1.0;
+    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/2 && ballSpeedY > -1.5) {
+      ballSpeedY -= 0.25;
+
+    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
+      ballSpeedY += 0.25;
+
     }
     ballSpeedX *= -1;
   }
