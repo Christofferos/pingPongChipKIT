@@ -10,6 +10,9 @@
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
+#include <stdlib.h>
+
+void *stdin, *stdout, *stderr;
 
 int main(void) {
         /*
@@ -62,9 +65,19 @@ int main(void) {
 	display_update();
 	labinit(); /* Do any lab-specific initialization */
 
+/*
+	srand(2);   // Initialization, should only be called once.
+	float randomFloat1 = rand();
+	float randomFloat2 = rand();
+	float randomFloat3 = rand();
+	float randomFloat4 = rand(); 
+	randomFloat1 -= 1;
+*/
 	while( 1 )
+
 	{
-	  labwork(); /* Do lab-specific things again and again */
+		
+		labwork(); /* Do lab-specific things again and again */
 	}
 	return 0;
 }

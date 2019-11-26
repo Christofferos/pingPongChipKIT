@@ -16,6 +16,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+float randomFloat;
+
+srand(20);   // Initialization, should only be called once.
+float randomFloat1 = rand();
+float randomFloat2 = rand();
+float randomFloat3 = rand();
+float randomFloat4 = rand(); 
+randomFloat1 -= 1;
+	
+
 uint8_t display[32][128];
 uint8_t oled_display[512];
 int inMenu = 1;
@@ -54,7 +64,7 @@ int player2Score = 0;
 // Ball variables
 float ballSize = 4;
 float ballSpeedX = 1;
-float ballSpeedY = 1;
+float ballSpeedY = randomFloat;
 float xPosBall = 128/2- 2;
 float yPosBall = 16;
 
@@ -176,49 +186,6 @@ void updateGame(void)
   }
 }
 
-void padelCollide(void)
-{
-  if ((xPosBall == (xPosPadel1 + padelWidth - 2)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
-    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/2 && ballSpeedY > -1.5) {
-      ballSpeedY += 0.25;
-
-    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/2 && ballSpeedY < 1.5) {
-      ballSpeedY -= 0.25;
-    }
-    ballSpeedX *= -1;
-  } else if (((xPosBall + ballSize + 2) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
-    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/2 && ballSpeedY > -1.5) {
-      ballSpeedY -= 0.25;
-
-    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
-      ballSpeedY += 0.25;
-
-    }
-    ballSpeedX *= -1;
-  }
-  if ((xPosBall + ballSize) < 0 || xPosBall > 128) {
-    quicksleep(1 << 16);
-    goal();
-  }
-}
-
-void goal() {
-  // Check for goals
-  if (xPosBall < 0)
-  {
-    leds = ((leds << 1) | 0x1);
-    player2Score++;
-  }
-  else if (xPosBall > (128 - ballSize))
-  {
-    leds >>= 1;
-    player1Score++;
-  }
-  resetGame();
-  if (leds == 0x0 || leds == 0xff) {
-    endGame();
-  }
-}
 
 void resetGame() {
   xPosPadel1 = 0;
@@ -247,6 +214,7 @@ void resetGame() {
   startOfGame = 1;
 }
 
+
 void endGame(void) {
   if (!leds) {
     display_string(0, "");
@@ -272,6 +240,50 @@ void endGame(void) {
     inGame = 0;
     inMenu = 1;
     startOfMenu = 1;
+  }
+}
+
+void goal() {
+  // Check for goals
+  if (xPosBall < 0)
+  {
+    leds = ((leds << 1) | 0x1);
+    player2Score++;
+  }
+  else if (xPosBall > (128 - ballSize))
+  {
+    leds >>= 1;
+    player1Score++;
+  }
+  resetGame();
+  if (leds == 0x0 || leds == 0xff) {
+    endGame();
+  }
+}
+
+void padelCollide(void)
+{
+  if ((xPosBall == (xPosPadel1 + padelWidth - 2)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
+    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/2 && ballSpeedY > -1.5) {
+      ballSpeedY += 0.25;
+
+    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/2 && ballSpeedY < 1.5) {
+      ballSpeedY -= 0.25;
+    }
+    ballSpeedX *= -1;
+  } else if (((xPosBall + ballSize + 2) == xPosPadel2) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
+    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/2 && ballSpeedY > -1.5) {
+      ballSpeedY -= 0.25;
+
+    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
+      ballSpeedY += 0.25;
+
+    }
+    ballSpeedX *= -1;
+  }
+  if ((xPosBall + ballSize) < 0 || xPosBall > 128) {
+    quicksleep(1 << 16);
+    goal();
   }
 }
 
