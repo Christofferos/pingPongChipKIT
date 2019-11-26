@@ -41,6 +41,9 @@ int defaultMode = 1;
 int aiMode = 0;
 int survivalMode = 0;
 
+// AI difficulty variables
+float aiPadelSpeed = 0.75;
+
 int startOfMenu = 1;
 int startOfModes = 0;
 int startOfHighscores = 0;
@@ -234,9 +237,6 @@ void endGame(void) {
     display_update();
 
     quicksleep(1 << 18);
-    inGame = 0;
-    inMenu = 1;
-    startOfMenu = 1;
   } else if (leds == 0xff) {
     display_string(0, "");
     display_string(1, "");
@@ -246,9 +246,6 @@ void endGame(void) {
     display_update();
 
     quicksleep(1 << 18);
-    inGame = 0;
-    inMenu = 1;
-    startOfMenu = 1;
   }
   // Update the highscore system:
   if(survivalMode == 1) {
@@ -293,6 +290,10 @@ void endGame(void) {
     }
     survivalScore = 0;
   }
+  // SET VARIABLES to correct values
+  inGame = 0;
+  inMenu = 1;
+  startOfMenu = 1;
 }
 
 void goal() {
@@ -487,17 +488,26 @@ void modes() {
   }
 }
 
-/*char * toArray(int number) //Copied function
-    {
-        int n = log10(number) + 1;
-        int i;
-      char *numberArray = calloc(n, sizeof(char));
-        for ( i = 0; i < n; ++i, number /= 10 )
-        {
-            numberArray[i] = number % 10;
-        }
-        return numberArray;
-    }*/
+void aiDifficulty() {
+  if(aiMode) {
+    if(getsw() & 0x1) {
+      aiPadelSpeed = 0.9;
+    } else if (getsw() & 0x2) {
+      aiPadelSpeed = 1.05;
+    } else if (getsw() & 0x4) {
+      aiPadelSpeed = 1.20;
+    } else {
+      aiPadelSpeed = 0.75;
+    }
+  }
+}
+
+void quitGameOnCommand() {
+  if(inGame && getsw() & 0x8) {
+    resetGame();
+    endGame();
+  }
+}
 
 /* This function is called repetitively from the main program */
 void labwork(void)
@@ -508,7 +518,8 @@ void labwork(void)
     setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
     if (defaultMode) {
       //
-    } else if (survivalMode) {
+    } 
+    else if (survivalMode) {
       if (yPosBall < padelHeight / 2) {
         yPosPadel2 = 0;
       } else if ((yPosBall + ballSize) > (31 - padelHeight / 2)) {
@@ -516,14 +527,17 @@ void labwork(void)
       } else {
         yPosPadel2 = yPosBall + ballSize / 2 - padelHeight / 2;
       }
-    } else if (aiMode) {
+    } 
+    else if (aiMode) {
+        aiDifficulty();
        if (xPosBall > 127/2) {
           if((yPosPadel2+padelHeight/2) < (yPosBall+ballSize/2) && yPosPadel2 < (31 - padelHeight)) {
-            yPosPadel2 += 0.75;
+            yPosPadel2 += aiPadelSpeed;
           } else if((yPosPadel2+padelHeight/2) > (yPosBall+ballSize/2) && yPosPadel2 > 0) {
-            yPosPadel2 -= 0.75;
+            yPosPadel2 -= aiPadelSpeed;
           }
-      } else {
+      } 
+      else {
         if ((yPosPadel2 + padelHeight / 2) < 14.8) {
           yPosPadel2 += 0.1;
         } else if ((yPosPadel2 + padelHeight / 2) > 15.2) {
@@ -540,6 +554,7 @@ void labwork(void)
     padelCollide();
     updateGame();
     ledControl();
+    quitGameOnCommand();
     if (startOfGame) {
       quicksleep(1 << 23);
       startOfGame = 0;
