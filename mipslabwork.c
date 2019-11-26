@@ -46,10 +46,18 @@ int startOfModes = 0;
 int startOfHighscores = 0;
 int startOfGame = 1;
 int endOfGame = 0;
-int highScoreList[3];
+int survivalScore = 0;
+int highScoreList[3] = {0, 0, 0};
+  // Highscore int to char array
+  char snum1[10] = " #1 ";
+  char snum2[10] = " #2 ";
+  char snum3[10] = " #3 ";
+  char buf1[sizeof(int)*3+2];
+  char buf2[sizeof(int)*3+2];
+  char buf3[sizeof(int)*3+2];
 
 // Padel and player variables
-float padelHeight = 6;
+float padelHeight = 7;
 float padelWidth = 4;
 float padelSpeed = 1;
 int leds = 0xf;
@@ -242,8 +250,48 @@ void endGame(void) {
     inMenu = 1;
     startOfMenu = 1;
   }
+  // Update the highscore system:
   if(survivalMode == 1) {
-    
+    if(highScoreList[0] < survivalScore) {
+      if(highScoreList[0] != 0) {
+        strcpy(snum1, " #1 ");
+
+        strcpy(snum2, " #2 ");
+        snprintf(buf2, sizeof buf2, "%d", highScoreList[0]);
+        strcat(snum2, buf2);
+        
+        strcpy(snum3, " #3 ");
+        snprintf(buf3, sizeof buf3, "%d", highScoreList[1]);
+        strcat(snum3, buf3);
+
+        highScoreList[2] = highScoreList[1];
+        highScoreList[1] = highScoreList[0];
+      }
+      snprintf(buf1, sizeof buf1, "%d", survivalScore);
+      strcat(snum1, buf1);
+      highScoreList[0] = survivalScore;
+    } else if (highScoreList[1] < survivalScore) {
+      if(highScoreList[1] != 0) {
+        strcpy(snum2, " #2 ");
+        
+        strcpy(snum3, " #3 ");
+        snprintf(buf3, sizeof buf3, "%d", highScoreList[1]);
+        strcat(snum3, buf3);
+
+        highScoreList[2] = highScoreList[1];
+      }
+      snprintf(buf2, sizeof buf2, "%d", survivalScore);
+      strcat(snum2, buf2);
+      highScoreList[1] = survivalScore;
+    } else if (highScoreList[2] < survivalScore) {
+      if(highScoreList[2] != 0) {
+        strcpy(snum3, " #3 ");
+      }
+      snprintf(buf3, sizeof buf3, "%d", survivalScore);
+      strcat(snum3, buf3);
+      highScoreList[2] = survivalScore;
+    }
+    survivalScore = 0;
   }
 }
 
@@ -290,7 +338,12 @@ void padelCollide(void)
     } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
       ballSpeedY += 0.25;
     }
+    // Survival score increment
+    if(survivalMode) {
+      survivalScore++;
+    }
   }
+
   if ((xPosBall + ballSize) < 0 || xPosBall > 128) {
     quicksleep(1 << 16);
     goal();
@@ -518,9 +571,9 @@ void labwork(void)
   else if (inHighScores) {
     highscores();
     if (startOfHighscores) {
-    	display_string(0, " #1 " + highScoreList[0]); // Convert elements to string!
-    	display_string(1, " #2 " + highScoreList[1]);
-    	display_string(2, " #3 " + highScoreList[2]);
+    	display_string(0, snum1); // Convert elements to string!
+    	display_string(1, snum2);
+    	display_string(2, snum3);
       display_string(3, "> Back to menu");
       display_update();
       startOfHighscores = 0;
