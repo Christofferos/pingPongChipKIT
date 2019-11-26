@@ -242,6 +242,9 @@ void endGame(void) {
     inMenu = 1;
     startOfMenu = 1;
   }
+  if(survivalMode == 1) {
+    
+  }
 }
 
 void goal() {
