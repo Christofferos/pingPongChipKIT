@@ -16,19 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
-float randomFloat;
-
-/*
-srand(2);   // Initialization, should only be called once.
-float randomFloat1 = rand();
-float randomFloat2 = rand();
-float randomFloat3 = rand();
-float randomFloat4 = rand(); 
-randomFloat1 -= 1;
-	*/
-
 uint8_t display[32][128];
 uint8_t oled_display[512];
 int inMenu = 1;
@@ -61,6 +48,9 @@ int highScoreList[3] = {0, 0, 0};
   char buf2[sizeof(int)*3+2];
   char buf3[sizeof(int)*3+2];
 
+  char spaceTheScore[15] = "      ";
+  char survivalScoreDisplay[sizeof(int)*3+2];
+
 // Padel and player variables
 float padelHeight = 7;
 float padelWidth = 4;
@@ -81,6 +71,7 @@ float ballSpeedX = 1;
 float ballSpeedY = 0;
 float xPosBall = 128/2- 2;
 float yPosBall = 16;
+float maxBallSpeedX = 3;
 
 float randomNumber = 0;
 
@@ -267,7 +258,7 @@ void endGame(void) {
         strcpy(snum2, " #2 ");
         snprintf(buf2, sizeof buf2, "%d", highScoreList[0]);
         strcat(snum2, buf2);
-        
+
         strcpy(snum3, " #3 ");
         snprintf(buf3, sizeof buf3, "%d", highScoreList[1]);
         strcat(snum3, buf3);
@@ -281,7 +272,7 @@ void endGame(void) {
     } else if (highScoreList[1] < survivalScore) {
       if(highScoreList[1] != 0) {
         strcpy(snum2, " #2 ");
-        
+
         strcpy(snum3, " #3 ");
         snprintf(buf3, sizeof buf3, "%d", highScoreList[1]);
         strcat(snum3, buf3);
@@ -326,34 +317,57 @@ void goal() {
   }
 }
 
+void clearStringDisplay() {
+  display_string(0, "              ");
+  display_string(1, "              ");
+  display_string(2, "              ");
+  display_string(3, "              ");
+}
+
 void padelCollide(void)
 {
-  // PADEL 1 
+  // PADEL 1
   if ( ballSpeedX < 0 && (xPosBall >= xPosPadel1) && (xPosBall <= (xPosPadel1 + padelWidth)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
     ballSpeedX *= -1;
-    if(ballSpeedX < 3) {
+    if(ballSpeedX < maxBallSpeedX) {
       ballSpeedX += 0.5;
     }
     if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/2 && ballSpeedY > -1.5) {
-      ballSpeedY -= 0.25;
+      if(ballSpeedX < -2) {
+        ballSpeedY -= 0.55;
+      } else {
+        ballSpeedY -= 0.35;
+      }
     } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/2 && ballSpeedY < 1.5) {
-      ballSpeedY += 0.25;
-    }
-  } 
-  // PADEL 2
-  else if ( ballSpeedX > 0 && ((xPosBall + ballSize) >= xPosPadel2) && ((xPosBall + ballSize) <= xPosPadel2 + padelWidth) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
-    ballSpeedX *= -1;
-    if(ballSpeedX > -3) {
-      ballSpeedX -= 0.5;
-    }
-    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/2 && ballSpeedY > -1.5) {
-      ballSpeedY -= 0.25;
-    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
-      ballSpeedY += 0.25;
+      if(ballSpeedX < -2) {
+        ballSpeedY += 0.55;
+      } else {
+        ballSpeedY += 0.35;
+      }
     }
     // Survival score increment
     if(survivalMode) {
       survivalScore++;
+    }
+  }
+  // PADEL 2
+  else if ( ballSpeedX > 0 && ((xPosBall + ballSize) >= xPosPadel2) && ((xPosBall + ballSize) <= xPosPadel2 + padelWidth) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
+    ballSpeedX *= -1;
+    if(ballSpeedX > -maxBallSpeedX) {
+      ballSpeedX -= 0.5;
+    }
+    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/2 && ballSpeedY > -1.5) {
+      if(ballSpeedX > 2) {
+        ballSpeedY -= 0.55;
+      } else {
+        ballSpeedY -= 0.35;
+      }
+    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
+      if(ballSpeedX > 2) {
+        ballSpeedY += 0.55;
+      } else {
+        ballSpeedY += 0.35;
+      }
     }
   }
 
@@ -507,8 +521,10 @@ void aiDifficulty() {
       aiPadelSpeed = 0.9;
     } else if (getsw() & 0x2) {
       aiPadelSpeed = 1.05;
+      maxBallSpeedX = 3.5;
     } else if (getsw() & 0x4) {
       aiPadelSpeed = 1.20;
+      maxBallSpeedX = 4;
     } else {
       aiPadelSpeed = 0.75;
     }
@@ -531,7 +547,7 @@ void labwork()
     setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
     if (defaultMode) {
       //
-    } 
+    }
     else if (survivalMode) {
       if (yPosBall < padelHeight / 2) {
         yPosPadel2 = 0;
@@ -540,7 +556,10 @@ void labwork()
       } else {
         yPosPadel2 = yPosBall + ballSize / 2 - padelHeight / 2;
       }
-    } 
+      snprintf(survivalScoreDisplay, sizeof survivalScoreDisplay, "%d", survivalScore);
+      display_string(0, survivalScoreDisplay);
+      display_survival_update(64);
+    }
     else if (aiMode) {
         aiDifficulty();
        if (xPosBall > 127/2) {
@@ -549,7 +568,7 @@ void labwork()
           } else if((yPosPadel2+padelHeight/2) > (yPosBall+ballSize/2) && yPosPadel2 > 0) {
             yPosPadel2 -= aiPadelSpeed;
           }
-      } 
+      }
       else {
         if ((yPosPadel2 + padelHeight / 2) < 14.8) {
           yPosPadel2 += 0.1;
@@ -603,7 +622,7 @@ void labwork()
     highscores();
     if (startOfHighscores) {
     	display_string(0, snum1); // Convert elements to string!
-    	display_string(1, snum2);
+      display_string(1, snum2);
     	display_string(2, snum3);
       display_string(3, "> Back to menu");
       display_update();

@@ -159,6 +159,30 @@ void display_image(int x, const uint8_t *data) {
 	}
 }
 
+void display_survival_update(int x) {
+	int i, j, k;
+	int c;
+	for(i = 0; i < 1; i++) {
+		DISPLAY_CHANGE_TO_COMMAND_MODE;
+		spi_send_recv(0x22);
+		spi_send_recv(i);
+
+		spi_send_recv(x & 0xF); // set lower column start address
+		spi_send_recv(0x10 | ((x >> 4) & 0xF)); // set higher column start address
+
+		DISPLAY_CHANGE_TO_DATA_MODE;
+
+		for(j = 0; j < 2; j++) {
+			c = textbuffer[i][j];
+			if(c & 0x80)
+				continue;
+
+			for(k = 0; k < 8; k++)
+				spi_send_recv(font[c*8 + k]);
+		}
+	}
+}
+
 void display_update(void) {
 	int i, j, k;
 	int c;
