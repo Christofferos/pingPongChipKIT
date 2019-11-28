@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+
 float randomFloat;
 
 /*
@@ -80,6 +82,8 @@ float ballSpeedY = 0;
 float xPosBall = 128/2- 2;
 float yPosBall = 16;
 
+float randomNumber = 0;
+
 int timeoutcount = 0;
 int tickCounter = 0;
 
@@ -119,6 +123,21 @@ void labinit(void)
 
   IECSET(0) = 0x180;
   //enable_interrupt();
+}
+
+
+void getRandom() {
+  randomNumber = TMR2 % 5;
+  randomNumber /= 10;
+  randomNumber += 0.5;
+  randomNumber *= getRandomSign();
+}
+
+int getRandomSign() {
+  if(TMR2 % 10 < 5) {
+    return -1;
+  }
+  return 1;
 }
 
 void ledControl() {
@@ -198,7 +217,6 @@ void updateGame(void)
   }
 }
 
-
 void resetGame() {
   xPosPadel1 = 0;
   yPosPadel1 = 32/2 - padelHeight/2;
@@ -208,13 +226,6 @@ void resetGame() {
 
   xPosBall = 128/2 - ballSize/2;
   yPosBall = 16;
-  ballSpeedX *= -1;
-  ballSpeedY = 1;
-  if (ballSpeedX > 0) {
-    ballSpeedX = 1;
-  } else {
-    ballSpeedX = -1;
-  }
 
   clearDisplay();
   setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
@@ -294,6 +305,7 @@ void endGame(void) {
   inGame = 0;
   inMenu = 1;
   startOfMenu = 1;
+  startOfGame = 1;
 }
 
 void goal() {
@@ -397,6 +409,7 @@ void menu(void) {
   if (getbtns() & 0x1 && menuCursor == 0) {
       inMenu = 0;
       menuCursor = 0;
+      startOfGame = 1;
       inGame = 1;
       leds = 0xf;
   }
@@ -510,7 +523,7 @@ void quitGameOnCommand() {
 }
 
 /* This function is called repetitively from the main program */
-void labwork(void)
+void labwork()
 {
   quicksleep(1 << 15);
   if (inGame ) {
@@ -558,6 +571,9 @@ void labwork(void)
     if (startOfGame) {
       quicksleep(1 << 23);
       startOfGame = 0;
+      getRandom();
+      ballSpeedY = randomNumber;
+      ballSpeedX = getRandomSign();
     }
     clearDisplay();
   } else if (inMenu) {

@@ -65,18 +65,16 @@ int main(void) {
 	display_update();
 	labinit(); /* Do any lab-specific initialization */
 
-/*
-	srand(2);   // Initialization, should only be called once.
-	float randomFloat1 = rand();
-	float randomFloat2 = rand();
-	float randomFloat3 = rand();
-	float randomFloat4 = rand(); 
-	randomFloat1 -= 1;
-*/
-	while( 1 )
 
+	srand(2);   // Initialization, should only be called once.
+	float rand1 = rand();
+	float rand2 = rand();
+	float rand3 = rand();
+	float rand4 = rand(); 
+	rand1 -= 1;
+
+	while( 1 ) 
 	{
-		
 		labwork(); /* Do lab-specific things again and again */
 	}
 	return 0;
