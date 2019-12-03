@@ -558,7 +558,7 @@ void labwork()
       }
       snprintf(survivalScoreDisplay, sizeof survivalScoreDisplay, "%d", survivalScore);
       display_string(0, survivalScoreDisplay);
-      display_survival_update(64);
+      display_survival_update(63); // Middle of screen
     }
     else if (aiMode) {
         aiDifficulty();
