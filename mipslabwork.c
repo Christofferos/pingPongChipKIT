@@ -228,26 +228,68 @@ void resetGame() {
   startOfGame = 1;
 }
 
+int shiftDir = 1; // Höger
+void lightshow(int winner) {
+  PORTE = 0x8;
+  int count = 0;
+  if (!winner) { // Dark side
+    PORTE <<= 4;
+    while (count < 48) {
+      if(PORTE & 0x10) {
+        shiftDir = 0;
+      }
+      else if(PORTE & 0x80) {
+        shiftDir = 1;
+      }
+      if(shiftDir) {
+        PORTE >>= 1;
+      }
+      else if (!shiftDir) {
+        PORTE <<= 1;
+      }
+      count++;
+      quicksleep(1 << 19);
+    }
+  } else { // Light side
+    while (count < 48) {
+      if(PORTE & 0x1) {
+        shiftDir = 0;
+      }
+      else if(PORTE & 0x8) {
+        shiftDir = 1;
+      }
+      if(shiftDir) {
+        PORTE >>= 1;
+      }
+      else if (!shiftDir) {
+        PORTE <<= 1;
+      }
+      count++;
+      quicksleep(1 << 19);
+    }
+  }
+}
+
 
 void endGame(void) {
   if (!leds) {
     display_string(0, "");
-    display_string(1, "");
+    display_string(1, ""); // Ta bort?
     display_string(2, "");
     display_string(3, "");
     display_string(1, "Dark Side wins!");
     display_update();
+    lightshow(0);
 
-    quicksleep(1 << 18);
   } else if (leds == 0xff) {
     display_string(0, "");
-    display_string(1, "");
+    display_string(1, ""); // Ta bort?
     display_string(2, "");
     display_string(3, "");
     display_string(1, "Light Side wins!");
     display_update();
+    lightshow(1);
 
-    quicksleep(1 << 18);
   }
   // Update the highscore system:
   if(survivalMode == 1) {
