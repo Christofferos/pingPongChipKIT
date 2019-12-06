@@ -48,8 +48,9 @@ int highScoreList[3] = {0, 0, 0};
   char buf2[sizeof(int)*3+2];
   char buf3[sizeof(int)*3+2];
 
-  char spaceTheScore[15] = "      ";
-  char survivalScoreDisplay[sizeof(int)*3+2];
+  char concatenatedScore[16];
+  char spaceTheScore[7] = "       ";
+
 
 // Padel and player variables
 float padelHeight = 7;
@@ -92,7 +93,6 @@ void user_isr(void)
   }
 }
 
-/* Lab-specific initialization goes here */
 void labinit(void)
 {
   volatile int *trise = (volatile int *)0xbf886100;
@@ -100,20 +100,6 @@ void labinit(void)
   TRISDSET = 0xfe0; // Set as input (BTN 2-4, SW 1-4)
   TRISFSET = 0x2; // Set as input (BTN 1)
   PORTE = 0x0;        // LED:s
-
-  T2CONSET = 0x8070;         // Sets prescaler to 1:256
-                             // Clock rate divider = prescaler = T2CON
-  TMR2 = 0;                  // Resets clock
-  PR2 = 80000000 / 256 / 10; // PR2 = Time out period
-
-  // SW1
-  IPCSET(1) = 0xf800000;
-
-  // Timer 2
-  IPCSET(2) = 0x1f;
-
-  IECSET(0) = 0x180;
-  //enable_interrupt();
 }
 
 
@@ -152,7 +138,7 @@ void setPixelArray(int xPos, int yPos, int xlen, int ylen)
 
 void translateToImage()
 {
-  int page, column, row;
+  int page, column, row, c, k;
   uint8_t powerOfTwo = 1; // Interval: 2^0, 2^1 ... to ... 2^7
   uint8_t oledNumber = 0;
 
@@ -162,7 +148,6 @@ void translateToImage()
     {
       powerOfTwo = 1;
       oledNumber = 0;
-
       for (row = 0; row < 8; row++)
       {
         if (display[8 * page + row][column])
@@ -171,6 +156,16 @@ void translateToImage()
         }
         powerOfTwo <<= 1;
       }
+      // Display score in survival mode
+      if (survivalMode && page == 0) {
+        if (column % 8 == 0) {
+          c = textbuffer[page][column/8];
+        }
+        if (!(c & 0x80)) {
+          oledNumber |= font[c*8 + column%8];
+        }
+      }
+
       oled_display[column + page * 128] = oledNumber;
     }
   }
@@ -270,11 +265,9 @@ void lightshow(int winner) {
   }
 }
 
-
 void endGame(void) {
   if (!leds) {
     display_string(0, "");
-    display_string(1, ""); // Ta bort?
     display_string(2, "");
     display_string(3, "");
     display_string(1, "Dark Side wins!");
@@ -283,10 +276,23 @@ void endGame(void) {
 
   } else if (leds == 0xff) {
     display_string(0, "");
-    display_string(1, ""); // Ta bort?
-    display_string(2, "");
     display_string(3, "");
-    display_string(1, "Light Side wins!");
+    if (survivalMode) {
+      display_string(1, "   Your score:");
+      if (survivalScore >= highScoreList[0]) {
+        strcat(concatenatedScore, " :D");
+      } else if (survivalScore >= highScoreList[1] && survivalScore < highScoreList[0]) {
+        strcat(concatenatedScore, " :)");
+      } else if (survivalScore >= highScoreList[2] && survivalScore < highScoreList[1]) {
+        strcat(concatenatedScore, " :|");
+      } else {
+        strcat(concatenatedScore, " >:(");
+      }
+      display_string(2, concatenatedScore);
+    } else {
+      display_string(2, "");
+      display_string(1, "Light Side wins!");
+    }
     display_update();
     lightshow(1);
 
@@ -585,12 +591,10 @@ void labwork()
 {
   quicksleep(1 << 15);
   if (inGame ) {
+    clearStringDisplay();
     setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
     setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
-    if (defaultMode) {
-      //
-    }
-    else if (survivalMode) {
+    if (survivalMode) {
       if (yPosBall < padelHeight / 2) {
         yPosPadel2 = 0;
       } else if ((yPosBall + ballSize) > (31 - padelHeight / 2)) {
@@ -598,9 +602,10 @@ void labwork()
       } else {
         yPosPadel2 = yPosBall + ballSize / 2 - padelHeight / 2;
       }
-      snprintf(survivalScoreDisplay, sizeof survivalScoreDisplay, "%d", survivalScore);
-      display_string(0, survivalScoreDisplay);
-      display_survival_update(63); // Middle of screen
+      strcpy(concatenatedScore, spaceTheScore);
+      strcat(concatenatedScore, itoaconv(survivalScore));
+      display_string(0, concatenatedScore);
+
     }
     else if (aiMode) {
         aiDifficulty();
