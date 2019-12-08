@@ -16,8 +16,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// display = a matrix for the pixel dimensions is 32 pixels in height (y) and 128 pixels in width (x)
 uint8_t display[32][128];
+// oled_display = a matrix that can be interpreted by the hardware  
 uint8_t oled_display[512];
+
+// Variables to keep track of navigation between different screens
 int inMenu = 1;
 int inGame = 0;
 int inModes = 0;
@@ -33,11 +37,14 @@ int survivalMode = 0;
 // AI difficulty variables
 float aiPadelSpeed = 0.75;
 
+// Variables that are needed for (quicksleeps/delays) in the start and end of every screen
 int startOfMenu = 1;
 int startOfModes = 0;
 int startOfHighscores = 0;
 int startOfGame = 1;
 int endOfGame = 0;
+
+// Highscore specific variables
 int survivalScore = 0;
 int highScoreList[3] = {0, 0, 0};
   // Highscore int to char array
@@ -121,6 +128,7 @@ void ledControl() {
   PORTE = leds;
 }
 
+// Set array slots to ones or zeros in the 2D array.
 void setPixelArray(int xPos, int yPos, int xlen, int ylen)
 {
   int row, column;
@@ -136,10 +144,11 @@ void setPixelArray(int xPos, int yPos, int xlen, int ylen)
   }
 }
 
+// Translate the 2D array into the 1D array with 512 slots. 
 void translateToImage()
 {
   int page, column, row, c, k;
-  uint8_t powerOfTwo = 1; // Interval: 2^0, 2^1 ... to ... 2^7
+  uint8_t powerOfTwo = 1; // Interval: 2^0, 2^1 ... to ... 2^7.  
   uint8_t oledNumber = 0;
 
   for (page = 0; page < 4; page++)
