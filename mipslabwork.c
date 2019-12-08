@@ -18,7 +18,7 @@
 
 // display = a matrix for the pixel dimensions is 32 pixels in height (y) and 128 pixels in width (x)
 uint8_t display[32][128];
-// oled_display = a matrix that can be interpreted by the hardware  
+// oled_display = a matrix that can be interpreted by the hardware
 uint8_t oled_display[512];
 
 // Variables to keep track of navigation between different screens
@@ -47,17 +47,16 @@ int endOfGame = 0;
 // Highscore specific variables
 int survivalScore = 0;
 int highScoreList[3] = {0, 0, 0};
-  // Highscore int to char array
-  char snum1[10] = " #1 ";
-  char snum2[10] = " #2 ";
-  char snum3[10] = " #3 ";
-  char buf1[sizeof(int)*3+2];
-  char buf2[sizeof(int)*3+2];
-  char buf3[sizeof(int)*3+2];
+// Highscore int to char array
+char snum1[10] = " #1 ";
+char snum2[10] = " #2 ";
+char snum3[10] = " #3 ";
+char buf1[sizeof(int) * 3 + 2];
+char buf2[sizeof(int) * 3 + 2];
+char buf3[sizeof(int) * 3 + 2];
 
-  char concatenatedScore[16];
-  char spaceTheScore[7] = "       ";
-
+char concatenatedScore[16];
+char spaceTheScore[7] = "       ";
 
 // Padel and player variables
 float padelHeight = 7;
@@ -66,18 +65,18 @@ float padelSpeed = 1;
 int leds = 0xf;
 
 float xPosPadel1 = 0;
-float yPosPadel1 = 32/2 - 5;
+float yPosPadel1 = 32 / 2 - 5;
 int player1Score = 0;
 
 float xPosPadel2 = 127 - 4;
-float yPosPadel2 = 32/2 - 5;
+float yPosPadel2 = 32 / 2 - 5;
 int player2Score = 0;
 
 // Ball variables
 float ballSize = 3;
 float ballSpeedX = 1;
 float ballSpeedY = 0;
-float xPosBall = 128/2- 2;
+float xPosBall = 128 / 2 - 2;
 float yPosBall = 16;
 float maxBallSpeedX = 3;
 
@@ -100,31 +99,36 @@ void user_isr(void)
   }
 }
 
+// Set the necessary settings before the program starts
 void labinit(void)
 {
   volatile int *trise = (volatile int *)0xbf886100;
   TRISECLR = 0xff;  // Set as output (LED:S)
   TRISDSET = 0xfe0; // Set as input (BTN 2-4, SW 1-4)
-  TRISFSET = 0x2; // Set as input (BTN 1)
-  PORTE = 0x0;        // LED:s
+  TRISFSET = 0x2;   // Set as input (BTN 1)
+  PORTE = 0x0;      // LED:s
 }
 
-
-void getRandom() {
+// We use the TIMER to get randomness
+void getRandom()
+{
   randomNumber = TMR2 % 5;
   randomNumber /= 10;
   randomNumber += 0.5;
   randomNumber *= getRandomSign();
 }
 
-int getRandomSign() {
-  if(TMR2 % 10 < 5) {
+int getRandomSign()
+{
+  if (TMR2 % 10 < 5)
+  {
     return -1;
   }
   return 1;
 }
 
-void ledControl() {
+void ledControl()
+{
   PORTE = leds;
 }
 
@@ -136,7 +140,7 @@ void setPixelArray(int xPos, int yPos, int xlen, int ylen)
   { // y-axis
     for (column = 0; column < 128; column++)
     { // x-axis
-      if (row >= yPos && row <= (yPos + ylen) && column >= xPos && column <= (xPos+ xlen))
+      if (row >= yPos && row <= (yPos + ylen) && column >= xPos && column <= (xPos + xlen))
       {
         display[row][column] = 1;
       }
@@ -144,11 +148,11 @@ void setPixelArray(int xPos, int yPos, int xlen, int ylen)
   }
 }
 
-// Translate the 2D array into the 1D array with 512 slots. 
+// Translate the 2D array into the 1D array with 512 slots.
 void translateToImage()
 {
   int page, column, row, c, k;
-  uint8_t powerOfTwo = 1; // Interval: 2^0, 2^1 ... to ... 2^7.  
+  uint8_t powerOfTwo = 1; // Interval: 2^0, 2^1 ... to ... 2^7.
   uint8_t oledNumber = 0;
 
   for (page = 0; page < 4; page++)
@@ -165,13 +169,16 @@ void translateToImage()
         }
         powerOfTwo <<= 1;
       }
-      // Display score in survival mode
-      if (survivalMode && page == 0) {
-        if (column % 8 == 0) {
-          c = textbuffer[page][column/8];
+      // Display score in survival mode (Write 8-width letters, one for every time the column is a multiple of 8)
+      if (survivalMode && page == 0)
+      {
+        if (column % 8 == 0)
+        {
+          c = textbuffer[page][column / 8];
         }
-        if (!(c & 0x80)) {
-          oledNumber |= font[c*8 + column%8];
+        if (!(c & 0x80))
+        {
+          oledNumber |= font[c * 8 + column % 8]; // Set the hexadecimal number from font[] array and assign to the oledNumber variable.
         }
       }
 
@@ -191,12 +198,12 @@ void clearDisplay()
   {
     for (column = 0; column < 128; column++)
     {
-      display[row][column] = 0;
+      display[row][column] = 0; // Clear the array
     }
   }
   for (i = 0; i < 512; i++)
   {
-    oled_display[i] = 0;
+    oled_display[i] = 0; // Clear the array
   }
 }
 
@@ -209,17 +216,31 @@ void updateGame(void)
   if (yPosBall < 0 || yPosBall > (31 - ballSize))
   {
     ballSpeedY *= -1;
+
+    // Prevent the ball from getting stuck in the roof or floor.
+    /*
+    if (ballSpeedY > -0.15 && ballSpeedY <= 0)
+    {
+      ballSpeedY = -0.25;
+    }
+    else if (ballSpeedY >= 0 && ballSpeedY < 0.15)
+    {
+      ballSpeedY = 0.25;
+    }
+    */
   }
 }
 
-void resetGame() {
+// Set all the variables back to the default valeus.
+void resetGame()
+{
   xPosPadel1 = 0;
-  yPosPadel1 = 32/2 - padelHeight/2;
+  yPosPadel1 = 32 / 2 - padelHeight / 2;
 
   xPosPadel2 = 127 - padelWidth;
-  yPosPadel2 = 32/2 - padelHeight/2;
+  yPosPadel2 = 32 / 2 - padelHeight / 2;
 
-  xPosBall = 128/2 - ballSize/2;
+  xPosBall = 128 / 2 - ballSize / 2;
   yPosBall = 16;
 
   clearDisplay();
@@ -232,40 +253,55 @@ void resetGame() {
   startOfGame = 1;
 }
 
+// lightshow @params winner is 0 for left player and 1 for right player. Lights that move back and forth along one of the sides of the 8-LED lights.
 int shiftDir = 1; // Höger
-void lightshow(int winner) {
+void lightshow(int winner)
+{
   PORTE = 0x8;
   int count = 0;
-  if (!winner) { // Dark side
+  if (!winner)
+  { // Dark side
     PORTE <<= 4;
-    while (count < 48) {
-      if(PORTE & 0x10) {
+    while (count < 48)
+    {
+      if (PORTE & 0x10)
+      {
         shiftDir = 0;
       }
-      else if(PORTE & 0x80) {
+      else if (PORTE & 0x80)
+      {
         shiftDir = 1;
       }
-      if(shiftDir) {
+      if (shiftDir)
+      {
         PORTE >>= 1;
       }
-      else if (!shiftDir) {
+      else if (!shiftDir)
+      {
         PORTE <<= 1;
       }
       count++;
       quicksleep(1 << 19);
     }
-  } else { // Light side
-    while (count < 48) {
-      if(PORTE & 0x1) {
+  }
+  else
+  { // Light side
+    while (count < 48)
+    {
+      if (PORTE & 0x1)
+      {
         shiftDir = 0;
       }
-      else if(PORTE & 0x8) {
+      else if (PORTE & 0x8)
+      {
         shiftDir = 1;
       }
-      if(shiftDir) {
+      if (shiftDir)
+      {
         PORTE >>= 1;
       }
-      else if (!shiftDir) {
+      else if (!shiftDir)
+      {
         PORTE <<= 1;
       }
       count++;
@@ -274,42 +310,58 @@ void lightshow(int winner) {
   }
 }
 
-void endGame(void) {
-  if (!leds) {
+// Display who wins through text and set the highscores if in survival mode.
+void endGame(void)
+{
+  if (!leds)
+  {
     display_string(0, "");
     display_string(2, "");
     display_string(3, "");
     display_string(1, "Dark Side wins!");
     display_update();
     lightshow(0);
-
-  } else if (leds == 0xff) {
+  }
+  else if (leds == 0xff)
+  {
     display_string(0, "");
     display_string(3, "");
-    if (survivalMode) {
+    if (survivalMode)
+    {
       display_string(1, "   Your score:");
-      if (survivalScore >= highScoreList[0]) {
+      if (survivalScore >= highScoreList[0])
+      {
         strcat(concatenatedScore, " :D");
-      } else if (survivalScore >= highScoreList[1] && survivalScore < highScoreList[0]) {
+      }
+      else if (survivalScore >= highScoreList[1] && survivalScore < highScoreList[0])
+      {
         strcat(concatenatedScore, " :)");
-      } else if (survivalScore >= highScoreList[2] && survivalScore < highScoreList[1]) {
+      }
+      else if (survivalScore >= highScoreList[2] && survivalScore < highScoreList[1])
+      {
         strcat(concatenatedScore, " :|");
-      } else {
+      }
+      else
+      {
         strcat(concatenatedScore, " >:(");
       }
       display_string(2, concatenatedScore);
-    } else {
+    }
+    else
+    {
       display_string(2, "");
       display_string(1, "Light Side wins!");
     }
     display_update();
     lightshow(1);
-
   }
   // Update the highscore system:
-  if(survivalMode == 1) {
-    if(highScoreList[0] < survivalScore) {
-      if(highScoreList[0] != 0) {
+  if (survivalMode == 1)
+  {
+    if (highScoreList[0] < survivalScore)
+    {
+      if (highScoreList[0] != 0)
+      {
         strcpy(snum1, " #1 ");
 
         strcpy(snum2, " #2 ");
@@ -326,8 +378,11 @@ void endGame(void) {
       snprintf(buf1, sizeof buf1, "%d", survivalScore);
       strcat(snum1, buf1);
       highScoreList[0] = survivalScore;
-    } else if (highScoreList[1] < survivalScore) {
-      if(highScoreList[1] != 0) {
+    }
+    else if (highScoreList[1] < survivalScore)
+    {
+      if (highScoreList[1] != 0)
+      {
         strcpy(snum2, " #2 ");
 
         strcpy(snum3, " #3 ");
@@ -339,8 +394,11 @@ void endGame(void) {
       snprintf(buf2, sizeof buf2, "%d", survivalScore);
       strcat(snum2, buf2);
       highScoreList[1] = survivalScore;
-    } else if (highScoreList[2] < survivalScore) {
-      if(highScoreList[2] != 0) {
+    }
+    else if (highScoreList[2] < survivalScore)
+    {
+      if (highScoreList[2] != 0)
+      {
         strcpy(snum3, " #3 ");
       }
       snprintf(buf3, sizeof buf3, "%d", survivalScore);
@@ -356,7 +414,9 @@ void endGame(void) {
   startOfGame = 1;
 }
 
-void goal() {
+// Check if someone missed the ball with the padel.
+void goal()
+{
   // Check for goals
   if (xPosBall < 0)
   {
@@ -369,12 +429,14 @@ void goal() {
     player1Score++;
   }
   resetGame();
-  if (leds == 0x0 || leds == 0xff) {
+  if (leds == 0x0 || leds == 0xff)
+  {
     endGame();
   }
 }
 
-void clearStringDisplay() {
+void clearStringDisplay()
+{
   display_string(0, "              ");
   display_string(1, "              ");
   display_string(2, "              ");
@@ -384,56 +446,81 @@ void clearStringDisplay() {
 void padelCollide(void)
 {
   // PADEL 1
-  if ( ballSpeedX < 0 && (xPosBall >= xPosPadel1) && (xPosBall <= (xPosPadel1 + padelWidth)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight))) {
+  if (ballSpeedX < 0 && (xPosBall >= xPosPadel1) && (xPosBall <= (xPosPadel1 + padelWidth)) && ((yPosBall + ballSize) > yPosPadel1) && (yPosBall < (yPosPadel1 + padelHeight)))
+  {
     ballSpeedX *= -1;
-    if(ballSpeedX < maxBallSpeedX) {
+    if (ballSpeedX < maxBallSpeedX)
+    {
       ballSpeedX += 0.5;
     }
-    if ((yPosBall + ballSize/2) < yPosPadel1 + padelHeight/2 && ballSpeedY > -1.5) {
-      if(ballSpeedX < -2) {
+    if ((yPosBall + ballSize / 2) < yPosPadel1 + padelHeight / 2 && ballSpeedY > -1.5)
+    {
+      if (ballSpeedX < -2)
+      {
         ballSpeedY -= 0.55;
-      } else {
+      }
+      else
+      {
         ballSpeedY -= 0.35;
       }
-    } else if ((yPosBall + ballSize/2) > yPosPadel1 + 2*padelHeight/2 && ballSpeedY < 1.5) {
-      if(ballSpeedX < -2) {
+    }
+    else if ((yPosBall + ballSize / 2) > yPosPadel1 + 2 * padelHeight / 2 && ballSpeedY < 1.5)
+    {
+      if (ballSpeedX < -2)
+      {
         ballSpeedY += 0.55;
-      } else {
+      }
+      else
+      {
         ballSpeedY += 0.35;
       }
     }
     // Survival score increment
-    if(survivalMode) {
+    if (survivalMode)
+    {
       survivalScore++;
     }
   }
   // PADEL 2
-  else if ( ballSpeedX > 0 && ((xPosBall + ballSize) >= xPosPadel2) && ((xPosBall + ballSize) <= xPosPadel2 + padelWidth) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight))) {
+  else if (ballSpeedX > 0 && ((xPosBall + ballSize) >= xPosPadel2) && ((xPosBall + ballSize) <= xPosPadel2 + padelWidth) && (((yPosBall + ballSize) > yPosPadel2)) && (yPosBall < (yPosPadel2 + padelHeight)))
+  {
     ballSpeedX *= -1;
-    if(ballSpeedX > -maxBallSpeedX) {
+    if (ballSpeedX > -maxBallSpeedX)
+    {
       ballSpeedX -= 0.5;
     }
-    if ((yPosBall + ballSize/2) < yPosPadel2 + padelHeight/2 && ballSpeedY > -1.5) {
-      if(ballSpeedX > 2) {
+    if ((yPosBall + ballSize / 2) < yPosPadel2 + padelHeight / 2 && ballSpeedY > -1.5)
+    {
+      if (ballSpeedX > 2)
+      {
         ballSpeedY -= 0.55;
-      } else {
+      }
+      else
+      {
         ballSpeedY -= 0.35;
       }
-    } else if ((yPosBall + ballSize/2) > yPosPadel2 + 2*padelHeight/2 && ballSpeedY < 1.5) {
-      if(ballSpeedX > 2) {
+    }
+    else if ((yPosBall + ballSize / 2) > yPosPadel2 + 2 * padelHeight / 2 && ballSpeedY < 1.5)
+    {
+      if (ballSpeedX > 2)
+      {
         ballSpeedY += 0.55;
-      } else {
+      }
+      else
+      {
         ballSpeedY += 0.35;
       }
     }
   }
 
-  if ((xPosBall + ballSize) < 0 || xPosBall > 128) {
+  if ((xPosBall + ballSize) < 0 || xPosBall > 128)
+  {
     quicksleep(1 << 16);
     goal();
   }
 }
 
+// Enable padel movement with the buttons
 void playerMovement(void)
 {
   if (defaultMode && (getbtns() & 0x1) && (yPosPadel2 < (31 - padelHeight)))
@@ -455,17 +542,23 @@ void playerMovement(void)
 }
 /* ^Game logic - END */
 
-void moveMenuCursor(void) {
+void moveMenuCursor(void)
+{
   display_string(0, "  PONG!");
-  if (menuCursor == 0) {
+  if (menuCursor == 0)
+  {
     display_string(1, "> Start");
     display_string(2, "  Modes");
     display_string(3, "  High Scores");
-  } else if (menuCursor == 1) {
+  }
+  else if (menuCursor == 1)
+  {
     display_string(1, "  Start");
     display_string(2, "> Modes");
     display_string(3, "  High Scores");
-  } else if (menuCursor == 2) {
+  }
+  else if (menuCursor == 2)
+  {
     display_string(1, "  Start");
     display_string(2, "  Modes");
     display_string(3, "> High Scores");
@@ -475,57 +568,72 @@ void moveMenuCursor(void) {
   /* Variabler kan användas för att nå högre precition: screenWidth/3, screenHeight/3 */
 }
 
-void menu(void) {
+// Set which selected alternative starts which game mode.
+void menu(void)
+{
   quicksleep(1 << 20);
-  if (getbtns() & 0x1 && menuCursor == 0) {
-      inMenu = 0;
-      menuCursor = 0;
-      startOfGame = 1;
-      inGame = 1;
-      leds = 0xf;
+  if (getbtns() & 0x1 && menuCursor == 0)
+  {
+    inMenu = 0;
+    menuCursor = 0;
+    startOfGame = 1;
+    inGame = 1;
+    leds = 0xf;
   }
-  else if (getbtns() & 0x1 && menuCursor == 1) {
+  else if (getbtns() & 0x1 && menuCursor == 1)
+  {
     inMenu = 0;
     menuCursor = 0;
     inModes = 1;
     startOfModes = 1;
   }
-  else if (getbtns() & 0x1 && menuCursor == 2) {
+  else if (getbtns() & 0x1 && menuCursor == 2)
+  {
     inMenu = 0;
     menuCursor = 0;
     inHighScores = 1;
     startOfHighscores = 1;
   }
-  else if ((getbtns() & 0x2) && menuCursor != 2) {
+  else if ((getbtns() & 0x2) && menuCursor != 2)
+  {
     menuCursor++;
     moveMenuCursor();
   }
-  else if ((getbtns() & 0x4) && menuCursor != 0) {
+  else if ((getbtns() & 0x4) && menuCursor != 0)
+  {
     menuCursor--;
     moveMenuCursor();
   }
 }
 
-void highscores() {
+void highscores()
+{
   quicksleep(1 << 20);
-  if (getbtns() & 0x1) {
-      inMenu = 1;
-      inHighScores = 0;
-      startOfMenu = 1;
+  if (getbtns() & 0x1)
+  {
+    inMenu = 1;
+    inHighScores = 0;
+    startOfMenu = 1;
   }
 }
 
-void moveModesCursor() {
+void moveModesCursor()
+{
   display_string(0, "  MODES");
-  if (modesCursor == 0) {
+  if (modesCursor == 0)
+  {
     display_string(1, "> Default");
     display_string(2, "  Human vs AI");
     display_string(3, "  Survival");
-  } else if (modesCursor == 1) {
+  }
+  else if (modesCursor == 1)
+  {
     display_string(1, "  Default");
     display_string(2, "> Human vs AI");
     display_string(3, "  Survival");
-  } else if (modesCursor == 2) {
+  }
+  else if (modesCursor == 2)
+  {
     display_string(1, "  Default");
     display_string(2, "  Human vs AI");
     display_string(3, "> Survival");
@@ -533,18 +641,22 @@ void moveModesCursor() {
   display_update();
 }
 
-void modes() {
+// Set the variables responsible for different game modes.
+void modes()
+{
   quicksleep(1 << 20);
-  if (getbtns() & 0x1 && modesCursor == 0) {
-      inMenu = 1;
-      inModes = 0;
-      modesCursor = 0;
-      defaultMode = 1;
-      aiMode = 0;
-      survivalMode = 0;
-      startOfMenu = 1;
+  if (getbtns() & 0x1 && modesCursor == 0)
+  {
+    inMenu = 1;
+    inModes = 0;
+    modesCursor = 0;
+    defaultMode = 1;
+    aiMode = 0;
+    survivalMode = 0;
+    startOfMenu = 1;
   }
-  else if (getbtns() & 0x1 && modesCursor == 1) {
+  else if (getbtns() & 0x1 && modesCursor == 1)
+  {
     inMenu = 1;
     inModes = 0;
     modesCursor = 0;
@@ -553,7 +665,8 @@ void modes() {
     survivalMode = 0;
     startOfMenu = 1;
   }
-  else if (getbtns() & 0x1 && modesCursor == 2) {
+  else if (getbtns() & 0x1 && modesCursor == 2)
+  {
     inMenu = 1;
     inModes = 0;
     modesCursor = 0;
@@ -562,34 +675,49 @@ void modes() {
     survivalMode = 1;
     startOfMenu = 1;
   }
-  else if ((getbtns() & 0x2) && modesCursor != 2) {
+  else if ((getbtns() & 0x2) && modesCursor != 2)
+  {
     modesCursor++;
     moveModesCursor();
   }
-  else if ((getbtns() & 0x4) && modesCursor != 0) {
+  else if ((getbtns() & 0x4) && modesCursor != 0)
+  {
     modesCursor--;
     moveModesCursor();
   }
 }
 
-void aiDifficulty() {
-  if(aiMode) {
-    if(getsw() & 0x1) {
+// Change AI padel speed and ball maximum xSpeed for higher difficulties.
+void aiDifficulty()
+{
+  if (aiMode)
+  {
+    if (getsw() & 0x1)
+    {
       aiPadelSpeed = 0.9;
-    } else if (getsw() & 0x2) {
+    }
+    else if (getsw() & 0x2)
+    {
       aiPadelSpeed = 1.05;
       maxBallSpeedX = 3.5;
-    } else if (getsw() & 0x4) {
+    }
+    else if (getsw() & 0x4)
+    {
       aiPadelSpeed = 1.20;
       maxBallSpeedX = 4;
-    } else {
+    }
+    else
+    {
       aiPadelSpeed = 0.75;
     }
   }
 }
 
-void quitGameOnCommand() {
-  if(inGame && getsw() & 0x8) {
+// Enable the option to end the game by the use of the far left switch
+void quitGameOnCommand()
+{
+  if (inGame && getsw() & 0x8)
+  {
     resetGame();
     endGame();
   }
@@ -599,43 +727,61 @@ void quitGameOnCommand() {
 void labwork()
 {
   quicksleep(1 << 15);
-  if (inGame ) {
+  if (inGame)
+  {
     clearStringDisplay();
     setPixelArray(xPosPadel1, yPosPadel1, padelWidth, padelHeight);
     setPixelArray(xPosPadel2, yPosPadel2, padelWidth, padelHeight);
-    if (survivalMode) {
-      if (yPosBall < padelHeight / 2) {
+
+    // Do mode specific actions. Default, AI-mode, Survival-mode
+    if (survivalMode)
+    {
+      if (yPosBall < padelHeight / 2)
+      {
         yPosPadel2 = 0;
-      } else if ((yPosBall + ballSize) > (31 - padelHeight / 2)) {
+      }
+      else if ((yPosBall + ballSize) > (31 - padelHeight / 2))
+      {
         yPosPadel2 = 31 - padelHeight;
-      } else {
+      }
+      else
+      {
         yPosPadel2 = yPosBall + ballSize / 2 - padelHeight / 2;
       }
       strcpy(concatenatedScore, spaceTheScore);
       strcat(concatenatedScore, itoaconv(survivalScore));
       display_string(0, concatenatedScore);
-
     }
-    else if (aiMode) {
-        aiDifficulty();
-       if (xPosBall > 127/2) {
-          if((yPosPadel2+padelHeight/2) < (yPosBall+ballSize/2) && yPosPadel2 < (31 - padelHeight)) {
-            yPosPadel2 += aiPadelSpeed;
-          } else if((yPosPadel2+padelHeight/2) > (yPosBall+ballSize/2) && yPosPadel2 > 0) {
-            yPosPadel2 -= aiPadelSpeed;
-          }
+    else if (aiMode)
+    {
+      aiDifficulty();
+      if (xPosBall > 127 / 2)
+      {
+        if ((yPosPadel2 + padelHeight / 2) < (yPosBall + ballSize / 2) && yPosPadel2 < (31 - padelHeight))
+        {
+          yPosPadel2 += aiPadelSpeed;
+        }
+        else if ((yPosPadel2 + padelHeight / 2) > (yPosBall + ballSize / 2) && yPosPadel2 > 0)
+        {
+          yPosPadel2 -= aiPadelSpeed;
+        }
       }
-      else {
-        if ((yPosPadel2 + padelHeight / 2) < 14.8) {
+      else
+      {
+        if ((yPosPadel2 + padelHeight / 2) < 14.8)
+        {
           yPosPadel2 += 0.1;
-        } else if ((yPosPadel2 + padelHeight / 2) > 15.2) {
+        }
+        else if ((yPosPadel2 + padelHeight / 2) > 15.2)
+        {
           yPosPadel2 -= 0.1;
         }
       }
     }
     setPixelArray(xPosBall, yPosBall, ballSize, ballSize);
     translateToImage();
-    if (!endOfGame) {
+    if (!endOfGame)
+    {
       display_image(0, oled_display);
     }
     playerMovement();
@@ -643,7 +789,8 @@ void labwork()
     updateGame();
     ledControl();
     quitGameOnCommand();
-    if (startOfGame) {
+    if (startOfGame)
+    {
       quicksleep(1 << 23);
       startOfGame = 0;
       getRandom();
@@ -651,35 +798,42 @@ void labwork()
       ballSpeedX = getRandomSign();
     }
     clearDisplay();
-  } else if (inMenu) {
+  }
+  else if (inMenu)
+  {
     menu();
-    if (startOfMenu) {
+    if (startOfMenu)
+    {
       PORTE = 0x0;
       display_string(0, "  PONG!");
-    	display_string(1, "> Start");
-    	display_string(2, "  Modes");
-    	display_string(3, "  High Scores");
-    	display_update();
+      display_string(1, "> Start");
+      display_string(2, "  Modes");
+      display_string(3, "  High Scores");
+      display_update();
       startOfMenu = 0;
     }
-
-  } else if (inModes) {
+  }
+  else if (inModes)
+  {
     modes();
-    if (startOfModes) {
+    if (startOfModes)
+    {
       display_string(0, "  MODES");
-    	display_string(1, "> Default");
-    	display_string(2, "  Human vs AI");
-    	display_string(3, "  Survival");
-    	display_update();
+      display_string(1, "> Default");
+      display_string(2, "  Human vs AI");
+      display_string(3, "  Survival");
+      display_update();
       startOfModes = 0;
     }
   }
-  else if (inHighScores) {
+  else if (inHighScores)
+  {
     highscores();
-    if (startOfHighscores) {
-    	display_string(0, snum1); // Convert elements to string!
+    if (startOfHighscores)
+    {
+      display_string(0, snum1); // Convert elements to string!
       display_string(1, snum2);
-    	display_string(2, snum3);
+      display_string(2, snum3);
       display_string(3, "> Back to menu");
       display_update();
       startOfHighscores = 0;
