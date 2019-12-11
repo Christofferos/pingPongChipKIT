@@ -9,9 +9,9 @@ Game:
 <br>
 Main Menu:
 <br>
-![Woops, image could not be found.](./readme-images/menu.png)
+<img src="./readme-images/menu.png"/>
 
 <br>
 Modes Menu:
 <br>
-![Woops, image could not be found.](./readme-images/modes-menu.png)
+<img src="./readme-images/modes-menu.png"/>
